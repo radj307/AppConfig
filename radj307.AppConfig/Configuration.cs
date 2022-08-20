@@ -35,7 +35,7 @@ namespace AppConfig
         /// Note that this method does <b>not</b> have exception handling; any exceptions caused by passing invalid types must be caught by the caller.
         /// </summary>
         /// <param name="name">The name of a member property.<br/>
-        /// Valid entries are the names of properties from the <see cref="Configuration"/>-derived <see langword="object"/> type that is pointed to by the <see langword="static"/> <see cref="Configuration.Default"/> property.</param>
+        /// Valid entries are the names of properties from the <see cref="Configuration"/>-derived <see langword="object"/> type that is pointed to by the <see langword="static"/> <see cref="Default"/> property.</param>
         /// <returns>Value of the property specified by <paramref name="name"/> as an <see cref="object"/> type; otherwise <see langword="null"/> if the property wasn't found, or when the property was set to <see langword="null"/> itself.</returns>
         [SuppressPropertyChangedWarnings]
         public object? this[string name]
@@ -78,9 +78,7 @@ namespace AppConfig
                 if (member.Name.Equals("Item"))
                     continue;
                 if (member is FieldInfo fInfo && !fInfo.IsStatic && fInfo.IsPublic && otherType.GetField(fInfo.Name) is FieldInfo otherFInfo && fInfo.Equals(otherFInfo))
-                { // member:
                     fInfo.SetValue(this, otherFInfo.GetValue(other));
-                }
                 else if (member is PropertyInfo pInfo
                     && !pInfo.SetMethod!.IsStatic
                     && (pInfo.SetMethod?.IsPublic ?? false)
@@ -88,9 +86,7 @@ namespace AppConfig
                     && (pInfo.GetMethod?.IsPublic ?? false))
                 { // property:
                     if (otherType.GetProperty(pInfo.Name) is PropertyInfo otherPInfo)
-                    {
                         pInfo.SetValue(this, otherPInfo.GetValue(other));
-                    }
                 }
             }
         }
@@ -104,6 +100,11 @@ namespace AppConfig
         {
             if (path.Length.Equals(0))
                 return false;
+
+            if (!File.Exists(path) && !Path.IsPathRooted(path))
+                if (!File.Exists(path = Path.Combine(Environment.CurrentDirectory, path)))
+                    return false;
+
             if (JsonFile.Load(path, this.GetType()) is Configuration cfg)
             {
                 this.SetTo(cfg);
