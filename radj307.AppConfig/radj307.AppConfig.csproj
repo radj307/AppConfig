@@ -1,47 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<ErrorReport>none</ErrorReport>
-		<Authors>radj307</Authors>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Description>Simple JSON format application config alternative.</Description>
-		<Copyright>MIT @ radj307</Copyright>
-		<NeutralLanguage>en</NeutralLanguage>
-		<PackageReleaseNotes>See the full changelog at https://github.com/radj307/AppConfig/commits/main</PackageReleaseNotes>
-		<PackageTags>AppConfig;application-configuration;config</PackageTags>
-		<RepositoryType>git</RepositoryType>
-		<RepositoryUrl>https://github.com/radj307/AppConfig</RepositoryUrl>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<PackageProjectUrl>https://github.com/radj307/AppConfig</PackageProjectUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		
-		<Version></Version>
-		<ExtendedVersion></ExtendedVersion>
-		<ReleaseType></ReleaseType>
-	</PropertyGroup>
-
-	<ItemGroup>
-	  <None Include="..\README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Fody" Version="6.6.3">
-			<PrivateAssets>All</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-		<PackageReference Include="PropertyChanged.Fody" Version="3.4.1">
-			<PrivateAssets>All</PrivateAssets>
-		</PackageReference>
-	</ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ErrorReport>none</ErrorReport>
+    <Authors>radj307</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Simple JSON format application config alternative.</Description>
+    <Copyright>MIT @ radj307</Copyright>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageReleaseNotes>See the full changelog at https://github.com/radj307/AppConfig/commits/main</PackageReleaseNotes>
+    <PackageTags>AppConfig;application-configuration;config</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/radj307/AppConfig</RepositoryUrl>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageProjectUrl>https://github.com/radj307/AppConfig</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>0.0.0</Version>
+    <ExtendedVersion>0.0.0</ExtendedVersion>
+    <ReleaseType>NORMAL</ReleaseType>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fody" Version="6.6.3">
+      <PrivateAssets>All</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="PropertyChanged.Fody" Version="3.4.1">
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>
