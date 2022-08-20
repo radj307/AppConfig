@@ -32,13 +32,13 @@ namespace AppConfig
 
         #region Methods
         /// <summary>
-        /// Loads config values from the JSON file specified by <paramref name="Location"/>
+        /// Loads config values from the JSON file specified by <see cref="Location"/>
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
-        /// <returns><see langword="true"/> when the file specified by <paramref name="Location"/> exists and was successfully loaded; otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> when the file specified by <see name="Location"/> exists and was successfully loaded; otherwise <see langword="false"/>.</returns>
         public virtual bool Load() => this.Load(this.Location);
         /// <summary>
-        /// Saves config values to the JSON file specified by <paramref name="Location"/>
+        /// Saves config values to the JSON file specified by <see name="Location"/>
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
         /// <param name="formatting">Formatting type to use when serializing this class instance.</param>
