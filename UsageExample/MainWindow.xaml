@@ -27,7 +27,7 @@
         <TextBlock
             Grid.ColumnSpan="2"
             Margin="0,3"
-            Text="These controls are data-bound directly to MyConfig's properties." />
+            Text="These controls are data-bound directly to the config's properties." />
 
         <!--  This checkbox uses the ViewModel object as the data binding source  -->
         <CheckBox
@@ -42,9 +42,8 @@
             Grid.Column="1"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            Text="{Binding Text, Source={x:Static local:MyConfig.Default}, UpdateSourceTrigger=LostFocus}" />
-
-
+            Text="{Binding Inst.Text, Source={x:Static local:Program.configManager}, UpdateSourceTrigger=LostFocus}" />
+        <!--  Text="{Binding Text, Source={x:Static local:MyConfig.Default}, UpdateSourceTrigger=LostFocus}"  -->
 
         <TextBlock
             Grid.Row="2"

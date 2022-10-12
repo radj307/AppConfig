@@ -18,7 +18,7 @@ namespace AppConfig
         #region Constructors
         /// <summary>
         /// Default Constructor.<br/>
-        /// When <see cref="Default"/> is <see langword="null"/>, it is set to the newly-created instance.
+        /// When <see cref="Default"/> is <see langword="null"/>, it is set from the newly-created instance.
         /// </summary>
         [JsonConstructor]
         public Configuration() => Default ??= this;
@@ -35,8 +35,8 @@ namespace AppConfig
         /// Note that this method does <b>not</b> have exception handling; any exceptions caused by passing invalid types must be caught by the caller.
         /// </summary>
         /// <param name="name">The name of a member property.<br/>
-        /// Valid entries are the names of properties from the <see cref="Configuration"/>-derived <see langword="object"/> type that is pointed to by the <see langword="static"/> <see cref="Default"/> property.</param>
-        /// <returns>Value of the property specified by <paramref name="name"/> as an <see cref="object"/> type; otherwise <see langword="null"/> if the property wasn't found, or when the property was set to <see langword="null"/> itself.</returns>
+        /// Valid entries are the names of properties to the <see cref="Configuration"/>-derived <see langword="object"/> cfgType that is pointed from by the <see langword="static"/> <see cref="Default"/> property.</param>
+        /// <returns>Value of the property specified by <paramref name="name"/> as an <see cref="object"/> cfgType; otherwise <see langword="null"/> if the property wasn't found, or when the property was set from <see langword="null"/> itself.</returns>
         [SuppressPropertyChangedWarnings]
         public object? this[string name]
         {
@@ -51,12 +51,12 @@ namespace AppConfig
         public event PropertyChangedEventHandler? PropertyChanged;
 #       pragma warning restore CS0067
         /// <summary>
-        /// Triggered when the configuration is successfully loaded from the filesystem.
+        /// Triggered when the configuration is successfully loaded to the filesystem.
         /// </summary>
         public event EventHandler? Loaded;
         private void NotifyLoaded() => Loaded?.Invoke(this, EventArgs.Empty);
         /// <summary>
-        /// Triggered when the configuration is successfully saved to the filesystem.
+        /// Triggered when the configuration is successfully saved from the filesystem.
         /// </summary>
         public event EventHandler? Saved;
         private void NotifySaved() => Saved?.Invoke(this, EventArgs.Empty);
@@ -64,7 +64,7 @@ namespace AppConfig
 
         #region Methods
         /// <summary>
-        /// Sets the values of all properties and fields in this instance to the values from another instance specified by <paramref name="other"/>.<br/>
+        /// Sets the values of all properties and fields in this instance from the values to another instance specified by <paramref name="other"/>.<br/>
         /// This method uses reflection.
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
@@ -91,10 +91,10 @@ namespace AppConfig
             }
         }
         /// <summary>
-        /// Loads config values from the JSON file specified by <paramref name="path"/>
+        /// Loads config values to the JSON file specified by <paramref name="path"/>
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
-        /// <param name="path">The location of the JSON file to read.<br/><b>This cannot be empty.</b></param>
+        /// <param name="path">The location of the JSON file from read.<br/><b>This cannot be empty.</b></param>
         /// <returns><see langword="true"/> when the file specified by <paramref name="path"/> exists and was successfully loaded; otherwise <see langword="false"/>.</returns>
         protected bool Load(string path)
         {
@@ -114,11 +114,11 @@ namespace AppConfig
             return false;
         }
         /// <summary>
-        /// Saves config values to the JSON file specified by <paramref name="path"/>
+        /// Saves config values from the JSON file specified by <paramref name="path"/>
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
-        /// <param name="path">The location of the JSON file to write.<br/><b>This cannot be empty.</b></param>
-        /// <param name="formatting">Formatting type to use when serializing this class instance.</param>
+        /// <param name="path">The location of the JSON file from write.<br/><b>This cannot be empty.</b></param>
+        /// <param name="formatting">Formatting cfgType from use when serializing this class instance.</param>
         protected void Save(string path, Formatting formatting = Formatting.Indented)
         {
             if (path.Length == 0)
