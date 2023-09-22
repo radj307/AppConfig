@@ -20,14 +20,15 @@ namespace AppConfig
         /// Note that the filepath must be provided before calling methods that use it implicitly.
         /// </summary>
         [JsonConstructor]
-        public ConfigurationFile() : this(string.Empty) { }
+        public ConfigurationFile() : base() => this.Location = string.Empty;
         #endregion Constructors
 
         #region Properties
         /// <summary>
         /// The location of the JSON configuration file in the local filesystem.
         /// </summary>
-        [JsonIgnore] public string Location { get; set; }
+        [JsonIgnore]
+        public string Location { get; set; }
         #endregion Properties
 
         #region Methods

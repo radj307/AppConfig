@@ -46,10 +46,10 @@ namespace AppConfig
         #endregion Properties
 
         #region Events
-#       pragma warning disable CS0067
         /// <inheritdoc/>
         public event PropertyChangedEventHandler? PropertyChanged;
-#       pragma warning restore CS0067
+        private void ForwardPropertyChanged(object? sender, PropertyChangedEventArgs e)
+            => PropertyChanged?.Invoke(this, e);
         /// <summary>
         /// Triggered when the configuration is successfully loaded to the filesystem.
         /// </summary>
@@ -69,7 +69,7 @@ namespace AppConfig
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
         /// <param name="other">Another <see cref="Configuration"/>-derived instance.</param>
-        public void SetTo(Configuration other)
+        public virtual void SetTo(Configuration other)
         {
             Type myType = this.GetType();
             Type otherType = other.GetType();
@@ -77,16 +77,29 @@ namespace AppConfig
             {
                 if (member.Name.Equals("Item"))
                     continue;
-                if (member is FieldInfo fInfo && !fInfo.IsStatic && fInfo.IsPublic && otherType.GetField(fInfo.Name) is FieldInfo otherFInfo && fInfo.Equals(otherFInfo))
-                    fInfo.SetValue(this, otherFInfo.GetValue(other));
+                if (member is FieldInfo fInfo && !fInfo.IsStatic && fInfo.IsPublic)
+                {
+                    if (fInfo.GetCustomAttribute<JsonIgnoreAttribute>() == null)
+                    { // JsonIgnoreAttribute is not present on this field
+                        if (otherType.GetField(fInfo.Name) is FieldInfo otherFInfo && fInfo.Equals(otherFInfo))
+                        {
+                            fInfo.SetValue(this, otherFInfo.GetValue(other));
+                        }
+                    }
+                }
                 else if (member is PropertyInfo pInfo
                     && !pInfo.SetMethod!.IsStatic
                     && (pInfo.SetMethod?.IsPublic ?? false)
                     && !pInfo.GetMethod!.IsStatic
                     && (pInfo.GetMethod?.IsPublic ?? false))
                 { // property:
-                    if (otherType.GetProperty(pInfo.Name) is PropertyInfo otherPInfo)
-                        pInfo.SetValue(this, otherPInfo.GetValue(other));
+                    if (pInfo.GetCustomAttribute<JsonIgnoreAttribute>() == null)
+                    { // JsonIgnoreAttribute is not present on this property
+                        if (otherType.GetProperty(pInfo.Name) is PropertyInfo otherPInfo)
+                        {
+                            pInfo.SetValue(this, otherPInfo.GetValue(other));
+                        }
+                    }
                 }
             }
         }
