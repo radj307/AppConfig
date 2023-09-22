@@ -19,8 +19,8 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <PackageProjectUrl>https://github.com/radj307/AppConfig</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>1.0.1</Version>
-    <ExtendedVersion>1.0.1</ExtendedVersion>
+    <Version>1.0.2</Version>
+    <ExtendedVersion>1.0.2</ExtendedVersion>
     <ReleaseType>NORMAL</ReleaseType>
     <RootNamespace>AppConfig</RootNamespace>
   </PropertyGroup>
