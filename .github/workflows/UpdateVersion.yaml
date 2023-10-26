@@ -20,10 +20,17 @@ jobs:
         with:
           ref:          'main'
           fetch-depth:  0
-      - name:   Update Version Numbers and Push Changes
+
+      - name:   Update .csproj Version Numbers
         run:    |
-                cd ${{github.workspace}}
-                .\SetVersion.ps1
+                $tag = $(git describe --tags --abbrev=0)
+                $tag -cmatch '(?<MAJOR>\d+?)\.(?<MINOR>\d+?)\.(?<PATCH>\d+?)(?<EXTRA>.*)' > $null
+                $tag_3_part = $Matches.MAJOR + '.' + $Matches.MINOR + '.' + $Matches.PATCH
+                $copyright = "Copyright © $((Get-Date).Year) by `$`(Authors`)"
+                .\SetVersion.ps1 -Path radj307.AppReconfig/radj307.AppReconfig.csproj  Version=$tag  FileVersion=$tag_3_part   Copyright=$copyright
+                
+      - name:   Push Changes
+        run:    |
                 git config user.name github-actions
                 git config user.email github-actions@github.com
                 git add -A

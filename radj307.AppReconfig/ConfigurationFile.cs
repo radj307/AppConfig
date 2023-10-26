@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 
 namespace AppConfig
 {
@@ -20,7 +21,7 @@ namespace AppConfig
         /// Note that the filepath must be provided before calling methods that use it implicitly.
         /// </summary>
         [JsonConstructor]
-        public ConfigurationFile() : base() => this.Location = string.Empty;
+        internal ConfigurationFile() : base() => this.Location = string.Empty;
         #endregion Constructors
 
         #region Properties

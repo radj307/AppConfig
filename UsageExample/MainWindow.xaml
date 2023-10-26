@@ -34,7 +34,7 @@
             Grid.Row="1"
             VerticalAlignment="Center"
             Content="Box"
-            IsChecked="{Binding Config.BoxIsChecked, Source={StaticResource VM}, UpdateSourceTrigger=PropertyChanged}" />
+            IsChecked="{Binding BoxIsChecked, Source={StaticResource VM}, UpdateSourceTrigger=PropertyChanged}" />
 
         <!--  This textbox uses the static 'Configuration.Default' property as the data binding source  -->
         <TextBox
@@ -42,7 +42,7 @@
             Grid.Column="1"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
-            Text="{Binding Inst.Text, Source={x:Static local:Program.configManager}, UpdateSourceTrigger=LostFocus}" />
+            Text="{Binding Text, Source={x:Static local:MyConfig.Instance}, UpdateSourceTrigger=LostFocus}" />
         <!--  Text="{Binding Text, Source={x:Static local:MyConfig.Default}, UpdateSourceTrigger=LostFocus}"  -->
 
         <TextBlock

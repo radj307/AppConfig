@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\radj307.AppConfig\radj307.AppConfig.csproj" />
+    <ProjectReference Include="..\radj307.AppReconfig\radj307.AppReconfig.csproj" />
   </ItemGroup>
 
 </Project>
