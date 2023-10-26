@@ -10,7 +10,7 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<NeutralLanguage>en-CA</NeutralLanguage>
-		<RepositoryUrl>https://github.com/radj307/AppConfig</RepositoryUrl>
+		<RepositoryUrl>https://github.com/radj307/AppConfig/tree/reconfig</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>gear-split.png</PackageIcon>
 		<Authors>radj307</Authors>
