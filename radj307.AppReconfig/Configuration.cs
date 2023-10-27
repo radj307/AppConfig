@@ -5,10 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization.Formatters;
 using UltraMapper;
 
 namespace AppConfig
@@ -16,9 +14,6 @@ namespace AppConfig
     /// <summary>
     /// The most basic <see langword="abstract"/> class in the AppConfig project.
     /// </summary>
-    /// <remarks>
-    /// Note that this class implements the <see cref="INotifyPropertyChanged"/> interface using Fody, as a result, all derived classes will automatically have event triggers injected into their property setters.
-    /// </remarks>
     [JsonObject]
     [Serializable]
     public abstract class Configuration : INotifyPropertyChanged, ICloneable
@@ -80,6 +75,21 @@ namespace AppConfig
         /// </remarks>
         [JsonIgnore]
         protected virtual IList<JsonConverter> JsonConverters => JsonSerializerSettings.Converters;
+        /// <summary>
+        /// Types to copy directly from source to target without recursing into subfields &amp; subproperties.
+        /// </summary>
+        /// <remarks>
+        /// Add types here that cause exceptions when recursing into them in <see cref="SetTo(Configuration)"/>.<br/>
+        /// A common type that cannot be copied recursively is <see cref="string"/>, so be sure to include it if you override this list.
+        /// </remarks>
+        protected virtual IList<Type> DoNotRecurseTypes => new[] { typeof(string) };
+        /// <summary>
+        /// Whether to catch and automatically resolve exceptions that occur when recursively copying values in <see cref="SetTo(Configuration)"/>.
+        /// </summary>
+        /// <remarks>
+        /// When <see langword="false"/>, copy operations will be much slower than they otherwise would be. You can prevent these exceptions entirely by adding the type that they occur for to <see cref="DoNotRecurseTypes"/>.
+        /// </remarks>
+        protected virtual bool ThrowOnCopyError => true;
         #endregion Properties
 
         #region Events
@@ -117,49 +127,125 @@ namespace AppConfig
         #region Methods
 
         #region SetTo
+        private const string ItemPropertyName = "Item";
+        private void CopyValue(PropertyInfo propertyInfo, object source, object target, BindingFlags bindingFlags)
+        {
+            // make sure this property doesn't have the JsonIgnore attribute AND isn't the "Item" property
+            if (propertyInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null || propertyInfo.Name.Equals(ItemPropertyName, StringComparison.Ordinal))
+                return;
+
+            var propertyType = propertyInfo.PropertyType;
+
+            if (propertyType.IsValueType || DoNotRecurseTypes.Contains(propertyType))
+            { // property is a simple value type
+                propertyInfo.SetValue(target, propertyInfo.GetValue(source));
+            }
+            else // use recursion to copy sub-fields and sub-properties
+            {
+                // get the source property's value
+                var sourceValue = propertyInfo.GetValue(source);
+                if (sourceValue == null)
+                { // source value is null, set the target value to null & return
+                    propertyInfo.SetValue(target, null);
+                    return;
+                }
+
+                // get the target property's value
+                var targetValue = propertyInfo.GetValue(target);
+                if (targetValue == null)
+                { // target value is null, set it to the source value & return
+                    propertyInfo.SetValue(target, propertyInfo.GetValue(source));
+                    return;
+                }
+
+                try
+                {
+                    // enumerate subfields in property value
+                    foreach (var subFieldInfo in propertyType.GetFields(bindingFlags))
+                    {
+                        CopyValue(subFieldInfo, sourceValue, targetValue, bindingFlags);
+                    }
+                    // enumerate subproperties in property value
+                    foreach (var subPropertyInfo in propertyType.GetProperties(bindingFlags))
+                    {
+                        CopyValue(subPropertyInfo, sourceValue, targetValue, bindingFlags);
+                    }
+                }
+                catch // fallback to setting property directly
+                {
+                    if (ThrowOnCopyError) throw;
+                    propertyInfo.SetValue(target, propertyInfo.GetValue(source));
+                }
+            }
+        }
+        private void CopyValue(FieldInfo fieldInfo, object source, object target, BindingFlags bindingFlags)
+        {
+            // make sure this field doesn't have the JsonIgnore attribute
+            if (fieldInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null)
+                return;
+
+            var fieldType = fieldInfo.FieldType;
+
+            if (fieldType.IsValueType || DoNotRecurseTypes.Contains(fieldType))
+            { // field is a simple value type
+                fieldInfo.SetValue(target, fieldInfo.GetValue(source));
+            }
+            else // use recursion to copy sub-fields and sub-properties
+            {
+                // get the source field's value
+                var sourceValue = fieldInfo.GetValue(source);
+                if (sourceValue == null)
+                { // source value is null, set the target value to null & return
+                    fieldInfo.SetValue(target, null);
+                    return;
+                }
+
+                // get the target field's value
+                var targetValue = fieldInfo.GetValue(target);
+                if (targetValue == null)
+                { // target value is null, set it to the source value & return
+                    fieldInfo.SetValue(target, fieldInfo.GetValue(source));
+                    return;
+                }
+
+                try
+                {
+                    // enumerate subfields in property value
+                    foreach (var subFieldInfo in fieldType.GetFields(bindingFlags))
+                    {
+                        CopyValue(subFieldInfo, sourceValue, targetValue, bindingFlags);
+                    }
+                    // enumerate subproperties in property value
+                    foreach (var subPropertyInfo in fieldType.GetProperties(bindingFlags))
+                    {
+                        CopyValue(subPropertyInfo, sourceValue, targetValue, bindingFlags);
+                    }
+                }
+                catch // fallback to setting field directly
+                {
+                    if (ThrowOnCopyError) throw;
+                    fieldInfo.SetValue(target, fieldInfo.GetValue(source));
+                }
+            }
+        }
         /// <summary>
         /// Sets the values of all public non-static fields and properties of this instance to the values in the specified <paramref name="other"/> instance.
         /// </summary>
         /// <param name="other">Another <see cref="Configuration"/>-derived instance.</param>
         public virtual void SetTo(Configuration other)
         {
-            Type otherType = other.GetType();
             var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
-            foreach (var member in Type.GetMembers(bindingFlags))
+
+            // enumerate fields
+            foreach (var fieldInfo in Type.GetFields(bindingFlags))
             {
-                switch (member.MemberType)
-                {
-                case MemberTypes.Field:
-                    {
-                        var fieldInfo = (FieldInfo)member;
-                        if (fieldInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                        var otherFieldInfo = otherType.GetField(fieldInfo.Name, bindingFlags);
-                        if (otherFieldInfo == null || otherFieldInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                        var otherValue = otherFieldInfo.GetValue(other);
-                        fieldInfo.SetValue(this, otherValue);
-                        break;
-                    }
-                case MemberTypes.Property:
-                    {
-                        var propertyInfo = (PropertyInfo)member;
-                        if (propertyInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null || propertyInfo.Name.Equals("Item", StringComparison.Ordinal)) continue;
-
-                        var otherPropertyInfo = otherType.GetProperty(propertyInfo.Name, bindingFlags);
-                        if (otherPropertyInfo == null || otherPropertyInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null) continue;
-
-                        var otherValue = otherPropertyInfo.GetValue(other);
-                        propertyInfo.SetValue(this, otherValue);
-                        break;
-                    }
-                }
+                CopyValue(fieldInfo, other, this, bindingFlags);
             }
-        }
-        public void SetTo2(Configuration other)
-        {
-            var mapper = new Mapper();
-            mapper.Map(other, this);
+            // enumerate properties
+            foreach (var propertyInfo in Type.GetProperties(bindingFlags))
+            {
+                CopyValue(propertyInfo, other, this, bindingFlags);
+            }
         }
         #endregion SetTo
 
