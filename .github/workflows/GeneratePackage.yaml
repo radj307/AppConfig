@@ -44,4 +44,8 @@ jobs:
         run:    dotnet pack ./radj307.AppReconfig/radj307.AppReconfig.csproj --noLogo -c Release -o . --include-symbols
         
       - name:   Upload NuGet Package
-        run:    foreach ($pkg in $(Get-ChildItem -Filter *.nupkg)) { dotnet nuget push $pkg.Name -k ${{ github.token }} -s https://nuget.pkg.github.com/radj307/index.json --skip-duplicate ; dotnet nuget push $pkg.Name -k ${{ secrets.NUGET_API_KEY_APPRECONFIG }} -s https://api.nuget.org/v3/index.json --skip-duplicate }
+        run:    >
+                foreach ($pkg in $(Get-ChildItem -Filter *.nupkg)) { 
+                  dotnet nuget push $pkg.Name -k ${{ github.token }} -s https://nuget.pkg.github.com/radj307/index.json --skip-duplicate ; 
+                  dotnet nuget push $pkg.Name -k ${{ secrets.NUGET_API_KEY_APPRECONFIG }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+                }
