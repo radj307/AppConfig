@@ -15,8 +15,8 @@
     <Authors>radj307</Authors>
     <Title>AppConfig</Title>
     <Description>Simple JSON config</Description>
-    <Version>2.2.0</Version>
-    <FileVersion>2.2.0</FileVersion>
+    <Version>2.3.0</Version>
+    <FileVersion>2.3.0</FileVersion>
     <Copyright>Copyright © 2023 by $(Authors)</Copyright>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
