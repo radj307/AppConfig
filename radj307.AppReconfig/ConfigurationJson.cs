@@ -8,7 +8,7 @@ namespace AppConfig
     /// <see langword="abstract"/> <see cref="Configuration"/> class with JSON support.
     /// </summary>
     [Serializable]
-    public abstract class JsonConfiguration : Configuration
+    public abstract class ConfigurationJson : Configuration
     {
         #region Properties
         /// <summary>

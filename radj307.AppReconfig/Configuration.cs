@@ -62,6 +62,13 @@ namespace AppConfig
         [System.Text.Json.Serialization.JsonIgnore]
         private static Configuration? _defaultInstance = null;
         /// <summary>
+        /// Gets whether the DefaultInstance has been initialized or not.
+        /// </summary>
+        /// <returns><see langword="true"/> when the DefaultInstance is initialized and can be accessed; otherwise <see langword="false"/>.</returns>
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public static bool HasDefaultInstance => _defaultInstance != null;
+        /// <summary>
         /// Gets whether this instance is the <see cref="DefaultInstance"/> instance.
         /// </summary>
         [Newtonsoft.Json.JsonIgnore]
@@ -131,7 +138,7 @@ namespace AppConfig
         /// Valid entries are the names of properties to the <see cref="Configuration"/>-derived <see langword="object"/> cfgType that is pointed from by the <see langword="static"/> <see cref="DefaultInstance"/> property.</param>
         /// <returns>The value of the property with the specified <paramref name="name"/> if it exists; otherwise <see langword="null"/>.</returns>
         [SuppressPropertyChangedWarnings]
-        public object? this[string name]
+        public virtual object? this[string name]
         {
             get => Type.GetProperty(name)?.GetValue(this);
             set => Type.GetProperty(name)?.SetValue(this, value);

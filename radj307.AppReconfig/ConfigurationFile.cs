@@ -5,10 +5,10 @@ using System.IO;
 namespace AppConfig
 {
     /// <summary>
-    /// <see langword="abstract"/> extension of the <see cref="JsonConfiguration"/> class that maintains the file location and provides methods to save to and load from it.
+    /// <see langword="abstract"/> extension of the <see cref="ConfigurationJson"/> class that maintains the file location and provides methods to save to and load from it.
     /// </summary>
     [Serializable]
-    public abstract class ConfigurationFile : JsonConfiguration
+    public abstract class ConfigurationFile : ConfigurationJson
     {
         #region Constructors
         /// <summary>
