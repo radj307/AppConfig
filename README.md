@@ -5,7 +5,7 @@ For the best results, this should be used with [Fody](https://github.com/Fody/Fo
 
 ## Getting Started
 
-Check out the [example projects](Examples) for full examples.
+Check out the [example projects](Examples/UsageExample) for full examples.
 
 To use it, create a class to store your settings and inherit from one of the `Configuration` abstract classes provided by AppConfig:
 
