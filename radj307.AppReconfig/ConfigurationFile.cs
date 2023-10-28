@@ -1,27 +1,21 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.IO;
 
 namespace AppConfig
 {
     /// <summary>
-    /// Extends the <see cref="Configuration"/> class with a built-in file <see cref="Location"/>, and adds methods that use this filepath implicitly.
+    /// <see langword="abstract"/> extension of the <see cref="JsonConfiguration"/> class that maintains the file location and provides methods to save to and load from it.
     /// </summary>
-    [JsonObject]
     [Serializable]
-    public abstract class ConfigurationFile : Configuration
+    public abstract class ConfigurationFile : JsonConfiguration
     {
         #region Constructors
         /// <summary>
-        /// Creates a new <see cref="ConfigurationFile"/> instance using the given <paramref name="location"/>.
+        /// Creates a new <see cref="ConfigurationFile"/> instance using the specified <paramref name="location"/>.
         /// </summary>
         /// <param name="location">The location of the JSON file in the filesystem.</param>
-        public ConfigurationFile(string location) : base() => this.Location = location;
-        /// <summary>
-        /// Creates a new <see cref="ConfigurationFile"/> instance without a filepath.<br/>
-        /// Note that the filepath must be provided before calling methods that use it implicitly.
-        /// </summary>
-        [JsonConstructor]
-        internal ConfigurationFile() : base() => this.Location = string.Empty;
+        protected ConfigurationFile(string location) : base() => Location = location;
         #endregion Constructors
 
         #region Properties
@@ -30,6 +24,8 @@ namespace AppConfig
         /// </summary>
         [JsonIgnore]
         public string Location { get; set; }
+        /// <inheritdoc/>
+        protected override JsonSerializerSettings JsonSerializerSettings => new() { Formatting = Formatting.Indented };
         #endregion Properties
 
         #region Methods
@@ -38,13 +34,17 @@ namespace AppConfig
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
         /// <returns><see langword="true"/> when the file specified by <see name="Location"/> exists and was successfully loaded; otherwise <see langword="false"/>.</returns>
-        public virtual bool Load() => this.Load(this.Location);
+        public virtual bool Load()
+            => LoadFrom(Location);
+        /// <inheritdoc cref="Configuration.LoadFrom(Stream, bool, bool)"/>
+        public bool LoadFrom(Stream stream, bool leaveStreamOpen = false) => LoadFrom(stream, leaveStreamOpen);
         /// <summary>
         /// Saves config values to the JSON file specified by <see name="Location"/>
         /// </summary>
         /// <remarks>This method may be overloaded in derived classes.</remarks>
         /// <param name="formatting">Formatting type to use when serializing this class instance.</param>
-        public virtual void Save(Formatting formatting = Formatting.Indented) => this.Save(this.Location, formatting);
+        public virtual void Save(Formatting formatting = Formatting.Indented)
+            => SaveTo(Location);
         #endregion Methods
     }
 }

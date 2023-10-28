@@ -250,8 +250,16 @@ namespace UsageExample
         [STAThread]
         public static void Main(string[] args)
         {
-            MyConfig config = new("ExampleConfig.json");
+            const string configPath = "ExampleConfig.json";
+
+            MyConfig config = new(configPath)
+            {
+                EnableAutosave = true
+            };
             config.Load();
+
+            // open the config file in the default text editor:
+            Process.Start(new ProcessStartInfo(configPath) { UseShellExecute = true })?.Dispose();
 
             var app = new Application();
             try

@@ -12,21 +12,11 @@ namespace UsageExample
         public string SubProperty1 { get; set; } = "Hello World!";
         public int SubProperty2 { get; set; } = 1000;
     }
-    public class MyConfig : ConfigurationFile, INotifyPropertyChanged
+    public class MyConfig : ConfigurationFileWithAutosave, INotifyPropertyChanged
     {
-        public MyConfig(string? locationOverride = null) : base(locationOverride ?? "ExampleConfig.json")
-        {
-            this.PropertyChanged += this.MyConfig_PropertyChanged;
-        }
+        public MyConfig(string location) : base(location) { }
 
-        private void MyConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            Save();
-        }
-
-        public MyConfig() : this(null) { }
-
-        public static MyConfig Instance => (MyConfig)Default;
+        public static MyConfig Instance => (MyConfig)DefaultInstance;
 
         public string Text { get; set; } = string.Empty;
         public bool BoxIsChecked { get; set; } = false;

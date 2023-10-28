@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using PropertyChanged;
+﻿using PropertyChanged;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,94 +7,108 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using UltraMapper;
 
 namespace AppConfig
 {
     /// <summary>
-    /// The most basic <see langword="abstract"/> class in the AppConfig project.
+    /// <see langword="abstract"/> base class for all config objects. Implements cloning, recursive property copying, and saving/loading functionality as well as property changed notifications using Fody.
     /// </summary>
-    [JsonObject]
     [Serializable]
     public abstract class Configuration : INotifyPropertyChanged, ICloneable
     {
         #region Constructors
         /// <summary>
         /// Default Constructor.<br/>
-        /// When <see cref="Default"/> is <see langword="null"/>, it is set from the newly-created instance.
+        /// When <see cref="DefaultInstance"/> is <see langword="null"/>, it is set from the newly-created instance.
         /// </summary>
-        protected Configuration()
+        /// <param name="forceSetDefaultInstance">When <see langword="false"/>, the DefaultInstance property is set to the newly created instance when it was <see langword="null"/>; otherwise when <see langword="true"/>, the DefaultInstance is always set to the new instance.</param>
+        protected Configuration(bool forceSetDefaultInstance = false)
         {
             Type = GetType();
-            Default ??= this;
+            if (forceSetDefaultInstance || _defaultInstance == null)
+                DefaultInstance = this;
+        }
+        [Newtonsoft.Json.JsonConstructor] //< use this constructor for JSON; never set DefaultInstance
+        [System.Text.Json.Serialization.JsonConstructor]
+        private Configuration()
+        {
+            Type = GetType();
         }
         #endregion Constructors
 
         #region Fields
         /// <summary>
-        /// The type 
+        /// The actual type of this instance.
         /// </summary>
-        [JsonIgnore]
-        public readonly Type Type;
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        protected readonly Type Type;
         #endregion Fields
 
         #region Properties
         /// <summary>
-        /// Default <see cref="Configuration"/> instance.
+        /// Gets the default <see cref="Configuration"/> instance.
+        /// </summary>
+        /// <exception cref="NotInitializedException">Get method failed because no <see cref="Configuration"/>-derived instances have been initialized yet.</exception>
+        /// <returns>The default <see cref="Configuration"/>-derived object instance.</returns>
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public static Configuration DefaultInstance
+        {
+            get => _defaultInstance ?? throw new NotInitializedException();
+            protected set => _defaultInstance = value;
+        }
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        private static Configuration? _defaultInstance = null;
+        /// <summary>
+        /// Gets whether this instance is the <see cref="DefaultInstance"/> instance.
+        /// </summary>
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsDefaultInstance => ReferenceEquals(this, DefaultInstance);
+        /// <summary>
+        /// Gets whether this instance is currently setting loaded property values or not.
         /// </summary>
         /// <remarks>
-        /// This is <see langword="null"/> until the first instance derived from <see cref="Configuration"/> is created.
+        /// This can be used to prevent unnecessary PropertyChanged notifications from triggering automatic saves in derived classes.
         /// </remarks>
-        [JsonIgnore]
-        public static Configuration Default { get; set; } = null!;
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsLoading { get; }
         /// <summary>
-        /// Gets whether this instance is the <see cref="Default"/> instance.
-        /// </summary>
-        [JsonIgnore]
-        public bool IsDefault => ReferenceEquals(this, Default);
-        /// <summary>
-        /// Gets whether the <see cref="Save"/> method cleans up the temporary file or not.
+        /// Gets the types to copy directly.
         /// </summary>
         /// <remarks>
-        /// The save method uses a temp file to prevent long writes from blocking.
-        /// This determines whether that file is automatically deleted or not.
+        /// Types that cannot, or should not, be recursively copied should be added here.
         /// </remarks>
-        /// <returns><see langword="true"/> when the temporary file is deleted after calling <see cref="Save"/>; otherwise <see langword="false"/>.</returns>
-        [JsonIgnore]
-        protected virtual bool DeleteTempFileOnSave { get; } = true;
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        protected virtual IList<Type> TypesNotToSetRecursively => new[] { typeof(string), typeof(IEnumerable) };
         /// <summary>
-        /// The default JsonSerializerSettings object to use when serializing JSON data.
+        /// Attribute types that, when applied to a property in this class (or a property inside of any of this class' properties), prevent <see cref="SetTo(Configuration)"/> from copying it between instances.
         /// </summary>
-        [JsonIgnore]
-        protected virtual JsonSerializerSettings JsonSerializerSettings { get; } = new();
-        /// <summary>
-        /// The default JsonConverter objects to use when deserializing JSON data.
-        /// </summary>
-        /// <remarks>
-        /// By default, this uses the Converters from the JsonSerializerSettings property.
-        /// </remarks>
-        [JsonIgnore]
-        protected virtual IList<JsonConverter> JsonConverters => JsonSerializerSettings.Converters;
-        /// <summary>
-        /// Types to copy directly from source to target without recursing into subfields &amp; subproperties.
-        /// </summary>
-        /// <remarks>
-        /// Add types here that cause exceptions when recursing into them in <see cref="SetTo(Configuration)"/>.<br/>
-        /// A common type that cannot be copied recursively is <see cref="string"/>, so be sure to include it if you override this list.
-        /// </remarks>
-        protected virtual IList<Type> DoNotRecurseTypes => new[] { typeof(string) };
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        protected virtual IList<Type> AttributeTypesNotToSet => Array.Empty<Type>();
         /// <summary>
         /// Whether to catch and automatically resolve exceptions that occur when recursively copying values in <see cref="SetTo(Configuration)"/>.
         /// </summary>
         /// <remarks>
-        /// When <see langword="false"/>, copy operations will be much slower than they otherwise would be. You can prevent these exceptions entirely by adding the type that they occur for to <see cref="DoNotRecurseTypes"/>.
+        /// When <see langword="false"/>, copy operations will be much slower than they otherwise would be. You can prevent these exceptions entirely by adding the type that they occur for to <see cref="TypesNotToSetRecursively"/>.
         /// </remarks>
-        protected virtual bool ThrowOnCopyError => true;
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        protected virtual bool ThrowOnSetValueRecursivelyError => true;
         #endregion Properties
 
         #region Events
         /// <inheritdoc/>
         public event PropertyChangedEventHandler? PropertyChanged;
+        /// <summary>
+        /// Triggers the PropertyChanged event for the specified <paramref name="propertyName"/>.
+        /// </summary>
+        /// <param name="propertyName">The name of the property that was changed. Leave blank to get the name of the property that this method was called from.</param>
         protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new(propertyName));
         /// <summary>
         /// Triggered when the configuration is successfully loaded to the filesystem.
@@ -115,7 +128,7 @@ namespace AppConfig
         /// Note that this method does <b>not</b> have exception handling; any exceptions caused by passing invalid types must be caught by the caller.
         /// </summary>
         /// <param name="name">The name of a member property.<br/>
-        /// Valid entries are the names of properties to the <see cref="Configuration"/>-derived <see langword="object"/> cfgType that is pointed from by the <see langword="static"/> <see cref="Default"/> property.</param>
+        /// Valid entries are the names of properties to the <see cref="Configuration"/>-derived <see langword="object"/> cfgType that is pointed from by the <see langword="static"/> <see cref="DefaultInstance"/> property.</param>
         /// <returns>The value of the property with the specified <paramref name="name"/> if it exists; otherwise <see langword="null"/>.</returns>
         [SuppressPropertyChangedWarnings]
         public object? this[string name]
@@ -127,20 +140,62 @@ namespace AppConfig
 
         #region Methods
 
-        #region SetTo
-        private const string ItemPropertyName = "Item";
-        private void CopyValue(PropertyInfo propertyInfo, object source, object target, BindingFlags bindingFlags)
+        #region CanSetValue
+        /// <summary>
+        /// Checks whether the property represented by the specified <paramref name="propertyInfo"/> can be copied between <see cref="Configuration"/> instances by <see cref="SetTo(Configuration)"/>.
+        /// </summary>
+        /// <param name="propertyInfo">The <see cref="PropertyInfo"/> object representing a property found in this instance, or inside of one of this instance's properties.</param>
+        /// <returns><see langword="true"/> when the property can be copied; otherwise <see langword="false"/>.</returns>
+        protected virtual bool CanSetValue(PropertyInfo propertyInfo)
+        {
+            foreach (var attributeType in propertyInfo.GetCustomAttributes().Select(a => a.GetType()))
+            {
+                if (AttributeTypesNotToSet.Contains(attributeType))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        #endregion CanSetValue
+
+        #region CanSetValueRecursively
+        /// <summary>
+        /// Checks whether the property represented by the specified <paramref name="propertyInfo"/> should have its properties recursively copied, or whether the entire property instance should be copied instead.
+        /// </summary>
+        /// <remarks>
+        /// By default, this checks if the property type can be assigned from any one of the types in the <see cref="TypesNotToSetRecursively"/> list.
+        /// </remarks>
+        /// <param name="propertyInfo">The <see cref="PropertyInfo"/> object representing a property found in this instance, or inside of one of this instance's properties.</param>
+        /// <returns><see langword="true"/> when the property can be recursively copied; otherwise <see langword="false"/>.</returns>
+        protected virtual bool CanSetValueRecursively(PropertyInfo propertyInfo)
+        {
+            var propertyType = propertyInfo.PropertyType;
+            foreach (var item in TypesNotToSetRecursively)
+            {
+                if (item.IsAssignableFrom(propertyType))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        #endregion CanSetValueRecursively
+
+        #region SetValueRecursively
+        private void SetValueRecursively(PropertyInfo propertyInfo, object source, object target, BindingFlags bindingFlags)
         {
             // check if this property is valid:
-            //  - does not have JsonIgnoreAttribute
-            //  - has a set method
+            //  - does not have any attributes that indicate the property shouldn't be copied
+            //  - has a get method (for the source)
+            //  - has a set method (for the target)
             //  - is not named "Item"
-            if (propertyInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null || !propertyInfo.CanWrite || propertyInfo.Name.Equals(ItemPropertyName, StringComparison.Ordinal))
+            if (!CanSetValue(propertyInfo) || !propertyInfo.CanRead || !propertyInfo.CanWrite || propertyInfo.Name.Equals("Item", StringComparison.Ordinal))
                 return;
 
             var propertyType = propertyInfo.PropertyType;
 
-            if (propertyType.IsValueType || propertyType.GetInterface(nameof(IEnumerable)) != null || DoNotRecurseTypes.Contains(propertyType))
+            if (propertyType.IsValueType || CanSetValueRecursively(propertyInfo))
             { // property is a simple value type, an enumerable, or in DoNotRecurseTypes
                 propertyInfo.SetValue(target, propertyInfo.GetValue(source));
             }
@@ -167,16 +222,19 @@ namespace AppConfig
                     // enumerate subproperties in property value
                     foreach (var subPropertyInfo in propertyType.GetProperties(bindingFlags))
                     {
-                        CopyValue(subPropertyInfo, sourceValue, targetValue, bindingFlags);
+                        SetValueRecursively(subPropertyInfo, sourceValue, targetValue, bindingFlags);
                     }
                 }
                 catch // fallback to setting property directly
                 {
-                    if (ThrowOnCopyError) throw;
+                    if (ThrowOnSetValueRecursivelyError) throw;
                     propertyInfo.SetValue(target, propertyInfo.GetValue(source));
                 }
             }
         }
+        #endregion SetValueRecursively
+
+        #region SetTo
         /// <summary>
         /// Sets the values of all public non-static fields and properties of this instance to the values in the specified <paramref name="other"/> instance.
         /// </summary>
@@ -188,53 +246,109 @@ namespace AppConfig
             // enumerate properties
             foreach (var propertyInfo in Type.GetProperties(bindingFlags))
             {
-                CopyValue(propertyInfo, other, this, bindingFlags);
+                SetValueRecursively(propertyInfo, other, this, bindingFlags);
             }
         }
         #endregion SetTo
 
-        #region Load
+        #region Deserialize
         /// <summary>
-        /// Loads config values to the JSON file specified by <paramref name="path"/>
+        /// Deserializes the specified <paramref name="serializedData"/> into a new <see cref="Configuration"/> instance.
         /// </summary>
-        /// <remarks>This method may be overloaded in derived classes.</remarks>
-        /// <param name="path">The location of the JSON file from read.<br/><b>This cannot be empty.</b></param>
-        /// <returns><see langword="true"/> when the file specified by <paramref name="path"/> exists and was successfully loaded; otherwise <see langword="false"/>.</returns>
-        protected bool Load(string path)
+        /// <remarks>
+        /// This is used by <see cref="LoadFrom(string)"/> &amp; <see cref="LoadFrom(Stream, bool, bool)"/>.
+        /// </remarks>
+        /// <param name="serializedData">The JSON data to deserialize as a <see cref="string"/>.</param>
+        /// <returns>A new instance of this class' type from <paramref name="serializedData"/>.</returns>
+        protected abstract Configuration? Deserialize(string serializedData);
+        #endregion Deserialize
+
+        #region LoadFrom
+        /// <summary>
+        /// Loads property values from the file at the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">The full path of the JSON file to read.</param>
+        /// <returns><see langword="true"/> when successful; otherwise <see langword="false"/>.</returns>
+        protected bool LoadFrom(string path)
         {
-            if (path.Length.Equals(0))
+            if (!FileIO.TryRead(path, out string serializedData))
                 return false;
 
-            if (!File.Exists(path) && !Path.IsPathRooted(path))
-                if (!File.Exists(path = Path.Combine(Environment.CurrentDirectory, path)))
-                    return false;
+            var inst = Deserialize(serializedData);
 
-            if (JsonFile.Load(path, Type, JsonConverters.ToArray()) is Configuration cfg)
-            {
-                SetTo(cfg);
+            if (inst == null) return false;
+
+            SetTo(inst);
+
+            if (inst is IDisposable disposable)
+                disposable.Dispose(); //< dispose of derived types that implement IDisposable
+
+            NotifyLoaded();
+            return true;
+        }
+        /// <summary>
+        /// Loads property values from the specified <paramref name="stream"/>.
+        /// </summary>
+        /// <param name="stream">The stream to read serialized JSON data from.</param>
+        /// <param name="leaveStreamOpen">When <see langword="true"/>, the <paramref name="stream"/> is left open and the caller is responsible for disposing of it; when <see langword="false"/>, the stream is disposed of before returning.</param>
+        /// <param name="notifyLoaded">When <see langword="true"/>, the <see cref="Loaded"/> event is fired.</param>
+        /// <returns><see langword="true"/> when successful; otherwise <see langword="false"/>.</returns>
+        protected bool LoadFrom(Stream stream, bool leaveStreamOpen = false, bool notifyLoaded = true)
+        {
+            var inst = Deserialize(FileIO.Read(stream, leaveStreamOpen));
+
+            if (inst == null) return false;
+
+            SetTo(inst);
+
+            if (inst is IDisposable disposable)
+                disposable.Dispose();
+
+            if (notifyLoaded)
                 NotifyLoaded();
+            return true;
+        }
+        #endregion LoadFrom
+
+        #region Serialize
+        /// <summary>
+        /// Serializes this <see cref="Configuration"/> instance and returns it as a <see cref="string"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is used by <see cref="SaveTo(string)"/> &amp; <see cref="SaveTo(Stream, bool, bool)"/>.
+        /// </remarks>
+        /// <returns>A <see cref="string"/> containing the serialized representation of this class instance's properties.</returns>
+        protected abstract string Serialize();
+        #endregion Serialize
+
+        #region SaveTo
+        /// <summary>
+        /// Saves property values to the file at the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">The full path of the JSON file to write.</param>
+        /// <returns><see langword="true"/> when successful; otherwise <see langword="false"/>.</returns>
+        protected bool SaveTo(string path)
+        {
+            if (FileIO.TryWrite(path, Serialize()))
+            {
+                NotifySaved();
                 return true;
             }
-            return false;
+            else return false;
         }
-        #endregion Load
-
-        #region Save
         /// <summary>
-        /// Saves config values from the JSON file specified by <paramref name="path"/>
+        /// Saves property values to the specified <paramref name="stream"/>.
         /// </summary>
-        /// <remarks>This method may be overloaded in derived classes.</remarks>
-        /// <param name="path">The location of the JSON file from write.<br/><b>This cannot be empty.</b></param>
-        /// <param name="formatting">Formatting cfgType from use when serializing this class instance.</param>
-        /// <param name="jsonSerializerSettings">The <see cref="JsonSerializerSettings"/> to use when serializing the config.</param>
-        protected void Save(string path, Formatting formatting)
+        /// <param name="stream">The stream to write serialized JSON data to.</param>
+        /// <param name="leaveStreamOpen">When <see langword="true"/>, the <paramref name="stream"/> is left open and the caller is responsible for disposing of it; when <see langword="false"/>, the stream is disposed of before returning.</param>
+        /// <param name="notifySaved">When <see langword="true"/>, the <see cref="Saved"/> event is fired.</param>
+        protected void SaveTo(Stream stream, bool leaveStreamOpen = true, bool notifySaved = false)
         {
-            if (path.Length == 0)
-                return;
-            JsonFile.Save(path, this, formatting, JsonSerializerSettings, DeleteTempFileOnSave);
-            this.NotifySaved();
+            FileIO.Write(stream, Serialize(), leaveStreamOpen: leaveStreamOpen);
+            if (notifySaved)
+                NotifySaved();
         }
-        #endregion Save
+        #endregion SaveTo
 
         #region Clone
         /// <inheritdoc/>
@@ -243,28 +357,5 @@ namespace AppConfig
         #endregion Clone
 
         #endregion Methods
-    }
-    public static class Extensions
-    {
-        /// <summary>
-        /// Clones this <see cref="Configuration"/>-derived instance.
-        /// </summary>
-        /// <typeparam name="T"><see cref="Configuration"/>-derived type.</typeparam>
-        /// <param name="configuration">(implicit) Object instance.</param>
-        /// <returns>A copy of this configuration instance.</returns>
-        /// <exception cref="MissingMethodException">Type <typeparamref name="T"/> does not have a parameterless constructor.</exception>
-        public static T Clone<T>(this T configuration) where T : Configuration
-        {
-            var mapper = new Mapper();
-            mapper.Config.ReferenceBehavior = ReferenceBehaviors.CREATE_NEW_INSTANCE;
-            var newInst = Activator.CreateInstance<T>();
-            mapper.Map(configuration, newInst);
-            return newInst;
-        }
-        internal static bool IsStatic(this PropertyInfo propertyInfo)
-            => propertyInfo.GetMethod?.IsStatic ?? propertyInfo.SetMethod!.IsStatic;
-        internal static bool IsAutoImplemented(this PropertyInfo propertyInfo)
-            => (propertyInfo.GetMethod != null && propertyInfo.GetMethod.GetCustomAttribute<CompilerGeneratedAttribute>(true) != null)
-            || (propertyInfo.SetMethod != null && propertyInfo.SetMethod.GetCustomAttribute<CompilerGeneratedAttribute>(true) != null);
     }
 }
