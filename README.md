@@ -12,32 +12,32 @@ To quickly get started with Fody if you haven't used it before, create a `FodyWe
 
 ## Example
 
-Check out the full [`UsageExample`](UsageExample)
+Check out the full [`UsageExample`](UsageExample) project.
 
 ```csharp
 using AppConfig;
+using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace UsageExample
 {
-    public class MyConfig : ConfigurationFile, INotifyPropertyChanged
+    public class ConfigSection
     {
-        public MyConfig(string? locationOverride = null) : base(locationOverride ?? "ExampleConfig.json")
-        {
-            this.PropertyChanged += this.MyConfig_PropertyChanged;
-        }
+        [JsonIgnore]
+        public int IgnoredSubField = 99;
+        public int SubField1 = 5;
+        public string SubProperty1 { get; set; } = "Hello World!";
+        public int SubProperty2 { get; set; } = 1000;
+    }
+    public class MyConfig : ConfigurationFileWithAutosave, INotifyPropertyChanged
+    {
+        public MyConfig(string location) : base(location) { }
 
-        private void MyConfig_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            Save();
-        }
-
-        public MyConfig() : this(null) { }
-
-        public static MyConfig Instance => (MyConfig)Default;
+        public static MyConfig Instance => (MyConfig)DefaultInstance;
 
         public string Text { get; set; } = string.Empty;
         public bool BoxIsChecked { get; set; } = false;
+        public ConfigSection Section { get; set; } = new();
     }
 }
 ```
