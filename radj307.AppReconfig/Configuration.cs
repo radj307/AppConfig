@@ -130,8 +130,11 @@ namespace AppConfig
         private const string ItemPropertyName = "Item";
         private void CopyValue(PropertyInfo propertyInfo, object source, object target, BindingFlags bindingFlags)
         {
-            // make sure this property doesn't have the JsonIgnore attribute AND isn't the "Item" property
-            if (propertyInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null || propertyInfo.Name.Equals(ItemPropertyName, StringComparison.Ordinal))
+            // check if this property is valid:
+            //  - does not have JsonIgnoreAttribute
+            //  - has a set method
+            //  - is not named "Item"
+            if (propertyInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null || !propertyInfo.CanWrite || propertyInfo.Name.Equals(ItemPropertyName, StringComparison.Ordinal))
                 return;
 
             var propertyType = propertyInfo.PropertyType;
