@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using PropertyChanged;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -139,8 +140,8 @@ namespace AppConfig
 
             var propertyType = propertyInfo.PropertyType;
 
-            if (propertyType.IsValueType || DoNotRecurseTypes.Contains(propertyType))
-            { // property is a simple value type
+            if (propertyType.IsValueType || propertyType.GetInterface(nameof(IEnumerable)) != null || DoNotRecurseTypes.Contains(propertyType))
+            { // property is a simple value type, an enumerable, or in DoNotRecurseTypes
                 propertyInfo.SetValue(target, propertyInfo.GetValue(source));
             }
             else // use recursion to copy sub-fields and sub-properties
@@ -163,11 +164,6 @@ namespace AppConfig
 
                 try
                 {
-                    // enumerate subfields in property value
-                    foreach (var subFieldInfo in propertyType.GetFields(bindingFlags))
-                    {
-                        CopyValue(subFieldInfo, sourceValue, targetValue, bindingFlags);
-                    }
                     // enumerate subproperties in property value
                     foreach (var subPropertyInfo in propertyType.GetProperties(bindingFlags))
                     {
@@ -181,56 +177,6 @@ namespace AppConfig
                 }
             }
         }
-        private void CopyValue(FieldInfo fieldInfo, object source, object target, BindingFlags bindingFlags)
-        {
-            // make sure this field doesn't have the JsonIgnore attribute
-            if (fieldInfo.GetCustomAttribute<JsonIgnoreAttribute>() != null)
-                return;
-
-            var fieldType = fieldInfo.FieldType;
-
-            if (fieldType.IsValueType || DoNotRecurseTypes.Contains(fieldType))
-            { // field is a simple value type
-                fieldInfo.SetValue(target, fieldInfo.GetValue(source));
-            }
-            else // use recursion to copy sub-fields and sub-properties
-            {
-                // get the source field's value
-                var sourceValue = fieldInfo.GetValue(source);
-                if (sourceValue == null)
-                { // source value is null, set the target value to null & return
-                    fieldInfo.SetValue(target, null);
-                    return;
-                }
-
-                // get the target field's value
-                var targetValue = fieldInfo.GetValue(target);
-                if (targetValue == null)
-                { // target value is null, set it to the source value & return
-                    fieldInfo.SetValue(target, fieldInfo.GetValue(source));
-                    return;
-                }
-
-                try
-                {
-                    // enumerate subfields in property value
-                    foreach (var subFieldInfo in fieldType.GetFields(bindingFlags))
-                    {
-                        CopyValue(subFieldInfo, sourceValue, targetValue, bindingFlags);
-                    }
-                    // enumerate subproperties in property value
-                    foreach (var subPropertyInfo in fieldType.GetProperties(bindingFlags))
-                    {
-                        CopyValue(subPropertyInfo, sourceValue, targetValue, bindingFlags);
-                    }
-                }
-                catch // fallback to setting field directly
-                {
-                    if (ThrowOnCopyError) throw;
-                    fieldInfo.SetValue(target, fieldInfo.GetValue(source));
-                }
-            }
-        }
         /// <summary>
         /// Sets the values of all public non-static fields and properties of this instance to the values in the specified <paramref name="other"/> instance.
         /// </summary>
@@ -239,11 +185,6 @@ namespace AppConfig
         {
             var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
 
-            // enumerate fields
-            foreach (var fieldInfo in Type.GetFields(bindingFlags))
-            {
-                CopyValue(fieldInfo, other, this, bindingFlags);
-            }
             // enumerate properties
             foreach (var propertyInfo in Type.GetProperties(bindingFlags))
             {
