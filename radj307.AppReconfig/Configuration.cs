@@ -27,13 +27,22 @@ namespace AppConfig
             Type = GetType();
             if (forceSetDefaultInstance || _defaultInstance == null)
                 DefaultInstance = this;
+
+            if (!_initialized)
+            {
+                _initialized = true;
+                NotifyInitialized(this);
+            }
         }
+        /// <summary>
+        /// JSON constructor.
+        /// </summary>
+        /// <remarks>
+        /// This will never set the DefaultInstance or fire the Initialized event.
+        /// </remarks>
         [Newtonsoft.Json.JsonConstructor] //< use this constructor for JSON; never set DefaultInstance
         [System.Text.Json.Serialization.JsonConstructor]
-        private Configuration()
-        {
-            Type = GetType();
-        }
+        private Configuration() => Type = GetType();
         #endregion Constructors
 
         #region Fields
@@ -43,6 +52,9 @@ namespace AppConfig
         [Newtonsoft.Json.JsonIgnore]
         [System.Text.Json.Serialization.JsonIgnore]
         protected readonly Type Type;
+        [Newtonsoft.Json.JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
+        private static bool _initialized = false; //< true when at least one instance has initialized
         #endregion Fields
 
         #region Properties
@@ -110,6 +122,12 @@ namespace AppConfig
         #endregion Properties
 
         #region Events
+        /// <summary>
+        /// Occurs when the first <see cref="Configuration"/>-derived instance is initialized and is ready to use.
+        /// This event is only fired once.
+        /// </summary>
+        public static event EventHandler<Configuration>? Initialized;
+        private void NotifyInitialized(Configuration instance) => Initialized?.Invoke(this, instance);
         /// <inheritdoc/>
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>
