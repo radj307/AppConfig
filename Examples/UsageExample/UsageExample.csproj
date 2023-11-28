@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\AnonymousPropertyAccessExample\AnonymousPropertyAccessExample.csproj" />
     <ProjectReference Include="..\..\radj307.AppReconfig\radj307.AppReconfig.csproj" />
   </ItemGroup>
 
